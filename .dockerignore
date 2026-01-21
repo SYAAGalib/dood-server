@@ -1,0 +1,16 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+.git
+.gitignore
+.vscode
+.idea
+*.log
+.env
+.env.*
+/ssh
+/data
+/caddy
+/backups
+/dist

@@ -1,0 +1,26 @@
+{
+  "name": "dood-serve",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.0",
+    "better-sqlite3": "^9.4.0",
+    "dockerode": "^4.0.0",
+    "hono": "^4.5.0",
+    "node-cron": "^3.0.3",
+    "tar-fs": "^3.0.4"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.9",
+    "@types/dockerode": "^3.3.34",
+    "@types/node": "^20.11.30",
+    "@types/node-cron": "^3.0.9",
+    "@types/tar-fs": "^2.0.4",
+    "typescript": "^5.4.0"
+  }
+}
