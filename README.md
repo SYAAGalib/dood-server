@@ -6,7 +6,7 @@ DooD Serve is a very lightweight alternative inspired by Dokploy, Coolify, and V
 
 **Author / Credit:** Sheikh Yeasin Ahsanullah Al-Galib (SYAAGalib)
 
-![DooD Serve UI](docs/)
+![DooD Serve UI](docs/img1.png)
 ![DooD Serve UI 2](docs/img2.png)
 
 ## Highlights
