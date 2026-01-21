@@ -947,7 +947,11 @@ async function buildImage(docker: Docker, repoPath: string, tag: string) {
 async function stopAndRemoveContainer(docker: Docker, name: string) {
   try {
     const container = docker.getContainer(name);
-    await container.stop();
+    try {
+      await container.stop();
+    } catch {
+      // ignore
+    }
     await container.remove({ force: true });
   } catch {
     return;
