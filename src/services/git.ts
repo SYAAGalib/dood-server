@@ -5,13 +5,17 @@ import { createHash } from "node:crypto";
 
 const SSH_DIR = "/root/.ssh";
 const SSH_KEY_PATH = "/root/.ssh/id_rsa";
+const SSH_KEY_PATH_ED25519 = "/root/.ssh/id_ed25519";
 const SSH_KNOWN_HOSTS = "/root/.ssh/known_hosts";
 
 export async function ensureSshKey(privateKey: string) {
   await mkdir(SSH_DIR, { recursive: true, mode: 0o700 });
 
-  await writeFile(SSH_KEY_PATH, privateKey.trim() + "\n", { mode: 0o600 });
-  await chmod(SSH_KEY_PATH, 0o600);
+  const isEd25519 = privateKey.includes("OPENSSH") || privateKey.includes("ed25519");
+  const targetPath = isEd25519 ? SSH_KEY_PATH_ED25519 : SSH_KEY_PATH;
+
+  await writeFile(targetPath, privateKey.trim() + "\n", { mode: 0o600 });
+  await chmod(targetPath, 0o600);
   await chmod(SSH_DIR, 0o700);
 
   // Pre-seed GitHub host key to avoid interactive prompt during clone/pull.
@@ -25,10 +29,15 @@ export async function deleteSshKey() {
   } catch {
     // ignore if missing
   }
+  try {
+    await unlink(SSH_KEY_PATH_ED25519);
+  } catch {
+    // ignore if missing
+  }
 }
 
 export function getGitSshCommand() {
-  return `ssh -i ${SSH_KEY_PATH} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new`;
+  return `ssh -i ${SSH_KEY_PATH_ED25519} -i ${SSH_KEY_PATH} -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new`;
 }
 
 export async function cloneOrPull(repoUrl: string, dest: string) {
@@ -63,7 +72,11 @@ export async function runGit(args: string[], cwd?: string) {
 }
 
 export async function testGithubSsh() {
-  await access(SSH_KEY_PATH);
+  try {
+    await access(SSH_KEY_PATH_ED25519);
+  } catch {
+    await access(SSH_KEY_PATH);
+  }
   return new Promise<{ ok: boolean; output: string }>((resolve) => {
     const child = spawn("ssh", ["-T", "git@github.com"], {
       env: { ...process.env, GIT_SSH_COMMAND: getGitSshCommand() },
