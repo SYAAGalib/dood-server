@@ -19,7 +19,7 @@ startBackupCron(db, docker);
 
 app.route("/", createProjectsRoutes(db, docker));
 
-const port = Number(process.env.PORT || 8080);
+const port = Number(process.env.PORT || 1111);
 
 serve({ fetch: app.fetch, port });
 console.log(`DooD Serve running on :${port}`);
