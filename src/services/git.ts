@@ -62,6 +62,30 @@ export async function runGit(args: string[], cwd?: string) {
   });
 }
 
+export async function testGithubSsh() {
+  await access(SSH_KEY_PATH);
+  return new Promise<{ ok: boolean; output: string }>((resolve) => {
+    const child = spawn("ssh", ["-T", "git@github.com"], {
+      env: { ...process.env, GIT_SSH_COMMAND: getGitSshCommand() },
+    });
+
+    let output = "";
+    child.stdout.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+    child.stderr.on("data", (chunk) => {
+      output += chunk.toString();
+    });
+
+    child.on("exit", (code) => {
+      resolve({ ok: code === 1 || code === 0, output: output.trim() });
+    });
+    child.on("error", () => {
+      resolve({ ok: false, output: "SSH test failed" });
+    });
+  });
+}
+
 async function ensureKnownHost(host: string) {
   let existing = "";
   try {

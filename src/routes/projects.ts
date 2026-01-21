@@ -6,7 +6,7 @@ import { mkdir, writeFile, access, readFile } from "node:fs/promises";
 import { join } from "node:path";
 import tar from "tar-fs";
 import { layout } from "../ui/layout.js";
-import { cloneOrPull, ensureSshKey, deleteSshKey, gitStatusHash } from "../services/git.js";
+import { cloneOrPull, ensureSshKey, deleteSshKey, gitStatusHash, testGithubSsh } from "../services/git.js";
 
 const REPOS_DIR = "/app/repos";
 const DOCKERFILE_TEMPLATE = `FROM node:20-bookworm-slim
@@ -169,6 +169,7 @@ export function createProjectsRoutes(db: Database.Database, docker: Docker) {
                 type="button"
               >Delete</button>
             </div>
+            <button class="w-full rounded bg-slate-700 px-4 py-2 text-white" hx-post="/settings/ssh/test" hx-target="#ssh-status" hx-swap="outerHTML" type="button">Test SSH Key</button>
             <div id="ssh-status" class="text-sm text-slate-600"></div>
           </form>
         </div>
@@ -436,6 +437,18 @@ export function createProjectsRoutes(db: Database.Database, docker: Docker) {
     db.prepare("DELETE FROM ssh_keys").run();
     await deleteSshKey();
     return c.html(`<div id="ssh-status" class="text-sm text-emerald-700">SSH key deleted.</div>`);
+  });
+
+  router.post("/settings/ssh/test", async (c) => {
+    try {
+      const result = await testGithubSsh();
+      if (result.ok) {
+        return c.html(`<div id="ssh-status" class="text-sm text-emerald-700">SSH OK: ${escapeHtml(result.output || "Authenticated")}</div>`);
+      }
+      return c.html(`<div id="ssh-status" class="text-sm text-rose-700">SSH failed: ${escapeHtml(result.output || "Unknown error")}</div>`);
+    } catch (error) {
+      return c.html(`<div id="ssh-status" class="text-sm text-rose-700">SSH test error.</div>`);
+    }
   });
 
   router.post("/settings/basic-auth", async (c) => {
