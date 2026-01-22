@@ -50,7 +50,7 @@ function initDb(database: Database.Database) {
   }
 
   try {
-    database.exec("UPDATE projects SET internal_port = port WHERE internal_port IS NULL");
+    database.exec("UPDATE projects SET internal_port = 8080 WHERE internal_port IS NULL");
   } catch {
     // ignore if table/column not ready
   }

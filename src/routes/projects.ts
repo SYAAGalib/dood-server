@@ -335,7 +335,7 @@ export function createProjectsRoutes(db: Database.Database, docker: Docker) {
     const repoUrl = String(body.repoUrl || "").trim();
     const domain = String(body.domain || "").trim();
     const port = Number(body.port || 0);
-    const internalPort = Number(body.internalPort || 0) || port;
+    const internalPort = Number(body.internalPort || 0) || 8080;
     const provisionDb = body.provisionDb === "on";
 
     if (!repoUrl || !domain || !port) {
@@ -742,7 +742,7 @@ async function projectsTable(db: Database.Database) {
         <td class="px-4 py-3 font-medium">${project.repo_url}</td>
         <td class="px-4 py-3">${project.status || "stopped"}</td>
         <td class="px-4 py-3">${project.port}</td>
-        <td class="px-4 py-3">${project.internal_port || project.port}</td>
+        <td class="px-4 py-3">${project.internal_port || 8080}</td>
         <td class="px-4 py-3">${project.domain}</td>
         <td class="px-4 py-3">
           <div class="flex flex-wrap gap-2">
@@ -821,7 +821,7 @@ async function deployProject(db: Database.Database, docker: Docker, normalizedRe
     const networkName = process.env.DOOD_NETWORK || "dood-net";
     await ensureNetwork(docker, networkName);
 
-    const internalPort = Number(project.internal_port || project.port);
+    const internalPort = Number(project.internal_port || 8080);
     const container = await docker.createContainer({
       name: project.container_name,
       Image: project.image_tag,
