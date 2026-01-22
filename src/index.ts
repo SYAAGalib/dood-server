@@ -32,6 +32,7 @@ function initDb(database: Database.Database) {
       repo_url_norm TEXT NOT NULL,
       domain TEXT NOT NULL,
       port INTEGER NOT NULL,
+      internal_port INTEGER,
       provision_db INTEGER NOT NULL DEFAULT 0,
       mongo_container TEXT,
       container_name TEXT,
@@ -40,6 +41,21 @@ function initDb(database: Database.Database) {
       created_at TEXT DEFAULT CURRENT_TIMESTAMP
     );
 
+    `);
+
+  try {
+    database.exec("ALTER TABLE projects ADD COLUMN internal_port INTEGER");
+  } catch {
+    // column already exists
+  }
+
+  try {
+    database.exec("UPDATE projects SET internal_port = port WHERE internal_port IS NULL");
+  } catch {
+    // ignore if table/column not ready
+  }
+
+  database.exec(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL

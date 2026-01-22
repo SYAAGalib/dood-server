@@ -6,7 +6,7 @@ services:
     container_name: dood-serve
     restart: unless-stopped
     ports:
-      - "1111:8080"
+      - "5000:8080"
     environment:
       - PORT=8080
       - WEBHOOK_SECRET=${WEBHOOK_SECRET:-changeme}

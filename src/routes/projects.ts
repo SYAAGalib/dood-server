@@ -134,8 +134,11 @@ export function createProjectsRoutes(db: Database.Database, docker: Docker) {
             <label class="block text-sm">Domain Name
               <input name="domain" class="mt-1 w-full rounded border px-3 py-2" placeholder="api.example.com" required />
             </label>
-            <label class="block text-sm">Port
-              <input name="port" type="number" class="mt-1 w-full rounded border px-3 py-2" placeholder="3000" required />
+            <label class="block text-sm">Public Port
+              <input name="port" type="number" class="mt-1 w-full rounded border px-3 py-2" placeholder="5000" required />
+            </label>
+            <label class="block text-sm">Container Port
+              <input name="internalPort" type="number" class="mt-1 w-full rounded border px-3 py-2" placeholder="8080" value="8080" />
             </label>
             <label class="flex items-center gap-2 text-sm">
               <input name="provisionDb" type="checkbox" class="rounded border" />
@@ -332,6 +335,7 @@ export function createProjectsRoutes(db: Database.Database, docker: Docker) {
     const repoUrl = String(body.repoUrl || "").trim();
     const domain = String(body.domain || "").trim();
     const port = Number(body.port || 0);
+    const internalPort = Number(body.internalPort || 0) || port;
     const provisionDb = body.provisionDb === "on";
 
     if (!repoUrl || !domain || !port) {
@@ -344,9 +348,9 @@ export function createProjectsRoutes(db: Database.Database, docker: Docker) {
     const mongoContainer = provisionDb ? `${containerName}-mongo` : null;
 
     db.prepare(
-      `INSERT INTO projects (repo_url, repo_url_norm, domain, port, provision_db, mongo_container, container_name, image_tag, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'stopped')`
-    ).run(repoUrl, normalizedRepo, domain, port, provisionDb ? 1 : 0, mongoContainer, containerName, imageTag);
+      `INSERT INTO projects (repo_url, repo_url_norm, domain, port, internal_port, provision_db, mongo_container, container_name, image_tag, status)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'stopped')`
+    ).run(repoUrl, normalizedRepo, domain, port, internalPort, provisionDb ? 1 : 0, mongoContainer, containerName, imageTag);
 
     if (provisionDb && mongoContainer) {
       await ensureMongoContainer(docker, mongoContainer);
@@ -738,6 +742,7 @@ async function projectsTable(db: Database.Database) {
         <td class="px-4 py-3 font-medium">${project.repo_url}</td>
         <td class="px-4 py-3">${project.status || "stopped"}</td>
         <td class="px-4 py-3">${project.port}</td>
+        <td class="px-4 py-3">${project.internal_port || project.port}</td>
         <td class="px-4 py-3">${project.domain}</td>
         <td class="px-4 py-3">
           <div class="flex flex-wrap gap-2">
@@ -779,13 +784,14 @@ async function projectsTable(db: Database.Database) {
           <tr>
             <th class="px-4 py-3">Repository</th>
             <th class="px-4 py-3">Status</th>
-            <th class="px-4 py-3">Port</th>
+            <th class="px-4 py-3">Public Port</th>
+            <th class="px-4 py-3">Container Port</th>
             <th class="px-4 py-3">Domain</th>
             <th class="px-4 py-3">Action</th>
           </tr>
         </thead>
         <tbody>
-          ${rows || "<tr><td class=\"px-4 py-3\" colspan=\"5\">No projects yet.</td></tr>"}
+          ${rows || "<tr><td class=\"px-4 py-3\" colspan=\"6\">No projects yet.</td></tr>"}
         </tbody>
       </table>
     </div>
@@ -815,11 +821,12 @@ async function deployProject(db: Database.Database, docker: Docker, normalizedRe
     const networkName = process.env.DOOD_NETWORK || "dood-net";
     await ensureNetwork(docker, networkName);
 
+    const internalPort = Number(project.internal_port || project.port);
     const container = await docker.createContainer({
       name: project.container_name,
       Image: project.image_tag,
       ExposedPorts: {
-        [`${project.port}/tcp`]: {},
+        [`${internalPort}/tcp`]: {},
       },
       Env: project.mongo_container
         ? [`MONGODB_URL=mongodb://${project.mongo_container}:27017`]
@@ -827,7 +834,7 @@ async function deployProject(db: Database.Database, docker: Docker, normalizedRe
       HostConfig: {
         RestartPolicy: { Name: "always" },
         PortBindings: {
-          [`${project.port}/tcp`]: [{ HostPort: String(project.port) }],
+          [`${internalPort}/tcp`]: [{ HostPort: String(project.port) }],
         },
       },
       NetworkingConfig: {
